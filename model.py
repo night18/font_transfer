@@ -27,15 +27,63 @@ img_depth = 3
 relu_alpha = 0.05
 dropout_rate = 0.2
 learning_rate = 0.01
+lambda_cycle = 10
 
 class CycleGAN():
 	def __init__(self):
 		# Todo: Load data
 		optimizers = Adam(learning_rate)
 		
-		#Build and compile the discriminator
+		# Build and compile the discriminator
 		self.d_A = self.discriminator(name='d_A')
-		self.d_B = 
+		self.d_B = self.discriminator(name='d_B')
+		self.d_A.compile(
+			loss = 'mse',
+			optimizers = optimizers,
+			metrics = ['accuracy']
+			)
+		self.d_B.compile(
+			loss = 'mse',
+			optimizers = optimizers,
+			metrics = ['accuracy']
+			)
+
+		# Build the generator
+		self.g_AtoB = self.generator(name='g_AtoB')
+		self.g_BtoA = self.generator(name='g_BtoA')
+
+		# Inputs
+		img_A = Input(shape=(img_height, img_width, img_depth))
+		img_B = Input(shape=(img_height, img_width, img_depth))
+
+		# Change domain
+		fake_B = self.g_AtoB(img_A)
+		fake_A = self.g_BtoA(img_B)
+
+		# Reconstruct to original domain
+		recon_A = self.g_BtoA(fake_B)
+		recon_B = self.g_AtoB(fake_A)
+
+		# stop training discriminator when training generator
+		self.d_A.trainable = False
+		self.d_B.trainable = False
+
+		# validate whether the generator can create true like image
+		valid_A = self.d_A(fake_A)
+		valid_B = self.d_B(fake_B)
+		
+		self.combine = Model(
+						inputs = [img_A, img_B],
+						outputs = [valid_A, valid_B, recon_A, recon_B]
+						)
+
+		self.combine.compile(
+						loss = ['mse', 'mse', 'mae', 'mae'],
+						loss_weights = [1, 1, lambda_cycle, lambda_cycle],
+						optimizers = optimizers
+						)
+		
+
 		# Chun
 
 
