@@ -60,6 +60,7 @@ class DataLoader():
 				imgs_A.append(img_A)
 				imgs_B.append(img_B)
 
+			# range (-1, 1)
 			imgs_A = np.array(imgs_A)/127.5 - 1.
 			imgs_B = np.array(imgs_B)/127.5 - 1.
 

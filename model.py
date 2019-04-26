@@ -19,18 +19,20 @@ from tensorflow.python.keras.layers import Lambda
 from data_loader import DataLoader
 import datetime
 import matplotlib.pyplot as plt
+from tensorflow.compat.v1 import ConfigProto
+from tensorflow.compat.v1 import InteractiveSession
 
 gen_filter_num = 32
 dis_filter_num = 64
 batch_size = 1
-sample_interval = 50
+sample_interval = 200
 pool_size = 50
 img_width = 256
 img_height = 256
 img_depth = 3
-relu_alpha = 0.05
+relu_alpha = 0.1
 dropout_rate = 0.2
-learning_rate = 0.01
+learning_rate = 0.001
 lambda_cycle = 10
 
 class CycleGAN():
@@ -77,8 +79,16 @@ class CycleGAN():
 		recon_B = self.g_AtoB(fake_A)
 
 		# stop training discriminator when training generator
-		self.d_A.trainable = False
-		self.d_B.trainable = False
+		d_A_layers = [l for l in self.d_A.layers]
+
+		for i in range(len(d_A_layers)):
+			d_A_layers[i].trainable = False
+
+		d_B_layers = [l for l in self.d_B.layers]
+		for i in range(len(d_B_layers)):
+			d_B_layers[i].trainable = False
+		# self.d_A.trainable = False
+		# self.d_B.trainable = False
 
 		# validate whether the generator can create true like image
 		valid_A = self.d_A(fake_A)
@@ -143,9 +153,9 @@ class CycleGAN():
 			x = myResModule(pre_lyr, 3, 4 * gen_filter_num, 4 * gen_filter_num, name+'_res_1')
 			x = myResModule(x, 3, 4 * gen_filter_num, 4 * gen_filter_num, name+'_res_2')
 			x = myResModule(x, 3, 4 * gen_filter_num, 4 * gen_filter_num, name+'_res_3')
-			x = myResModule(x, 3, 4 * gen_filter_num, 4 * gen_filter_num, name+'_res_4')
-			x = myResModule(x, 3, 4 * gen_filter_num, 4 * gen_filter_num, name+'_res_5')
-			x = myResModule(x, 3, 4 * gen_filter_num, 4 * gen_filter_num, name+'_res_6')
+			# x = myResModule(x, 3, 4 * gen_filter_num, 4 * gen_filter_num, name+'_res_4')
+			# x = myResModule(x, 3, 4 * gen_filter_num, 4 * gen_filter_num, name+'_res_5')
+			# x = myResModule(x, 3, 4 * gen_filter_num, 4 * gen_filter_num, name+'_res_6')
 
 			return x
 
@@ -155,8 +165,8 @@ class CycleGAN():
 			x = LeakyReLU(alpha=relu_alpha, name= name+'_decoder_relu_1')(x)
 
 			x = Conv2DTranspose( gen_filter_num, kernel_size=(3,3), strides=(2,2), padding='same', name=name+'_decoder_conv_2')(x)
-			x = BatchNormalization(name= name+'_decoder_norm_2')(x)
-			x = LeakyReLU(alpha=relu_alpha, name= name+'_decoder_relu_2')(x)
+			# x = BatchNormalization(name= name+'_decoder_norm_2')(x)
+			# x = LeakyReLU(alpha=relu_alpha, name= name+'_decoder_relu_2')(x)
 
 			x = Conv2DTranspose( img_depth, kernel_size=(7,7), activation='tanh' ,strides=(1,1), padding='same', name=name+'_decoder_conv_3')(x)
 			return x
@@ -223,9 +233,13 @@ class CycleGAN():
 
 				d_loss = 0.5 * np.add(dA_loss, dB_loss)
 
+				# self.d_A.summary()
+
+
 				g_loss = self.combine.train_on_batch([imgs_A, imgs_B],
 													[valid, valid,
 													imgs_A, imgs_B])
+				# self.d_A.summary()
 
 				elapsed_time = datetime.datetime.now() - start_time
 
@@ -261,7 +275,7 @@ class CycleGAN():
 
 		print(gen_imgs)
 		# rescale the images to 0 -1
-		gen_imgs = 0.5*gen_imgs + 0.5
+		gen_imgs = 0.5 * gen_imgs + 0.5
 
 		titles = ['Original', 'Translated', 'Reconstructed']
 		fig, axs = plt.subplots(r, c)
@@ -277,5 +291,11 @@ class CycleGAN():
 		plt.close()
 
 if __name__ == '__main__':
-	gan = CycleGAN()
-	gan.train(epochs=50, batch_size = 1,  sample_interval=sample_interval)
+
+	config = ConfigProto()
+	config.gpu_options.allow_growth = True
+	config.gpu_options.per_process_gpu_memory_fraction = 0.90
+	with tf.Session(config=config) as sess:
+		tf.set_random_seed(100)
+		gan = CycleGAN()
+		gan.train(epochs=10, batch_size = 1,  sample_interval=sample_interval)
