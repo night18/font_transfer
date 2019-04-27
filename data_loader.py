@@ -36,7 +36,7 @@ class DataLoader():
 		path_A = glob('./%s/%sA/*' % (self.dataset_name, data_type))
 		path_B = glob('./%s/%sB/*' % (self.dataset_name, data_type))
 
-		self.n_batches = int(min(len(path_A), len(path_B)) / batch_size)
+		self.n_batches = int(max(len(path_A), len(path_B)) / batch_size)
 		total_samples = self.n_batches * batch_size
 
 		# Sample n_batches * batch_size from each path list so that model sees all
