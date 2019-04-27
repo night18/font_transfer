@@ -215,7 +215,7 @@ class CycleGAN():
 
 		# Adversarial loss ground truths
 		valid = np.ones((batch_size, ) + self.disc_patch )
-		print(valid.shape())
+		print(valid)
 		print("!!!!!!!!!!!!!!!!!")
 		fake = np.zeros((batch_size, ) + self.disc_patch )
 
