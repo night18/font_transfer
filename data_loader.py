@@ -72,7 +72,6 @@ class DataLoader():
 			imgs_A = imgs_A.reshape(imgs_A.shape[0], 48, 48, 1)
 			imgs_B = imgs_B.reshape(imgs_B.shape[0], 48, 48, 1)
 
-			print(imgs_A.shape)
 
 			# range (-1, 1)
 			imgs_A = imgs_A/127.5 - 1.

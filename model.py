@@ -26,7 +26,7 @@ gen_filter_num = 32
 dis_filter_num = 64
 batch_size = 1
 sample_interval = 100
-epochs = 100
+epochs = 50
 pool_size = 50
 img_width = 48
 img_height = 48
@@ -155,9 +155,9 @@ class CycleGAN():
 			x = myResModule(pre_lyr, 3, 4 * gen_filter_num, 4 * gen_filter_num, name+'_res_1')
 			x = myResModule(x, 3, 4 * gen_filter_num, 4 * gen_filter_num, name+'_res_2')
 			x = myResModule(x, 3, 4 * gen_filter_num, 4 * gen_filter_num, name+'_res_3')
-			# x = myResModule(x, 3, 4 * gen_filter_num, 4 * gen_filter_num, name+'_res_4')
-			# x = myResModule(x, 3, 4 * gen_filter_num, 4 * gen_filter_num, name+'_res_5')
-			# x = myResModule(x, 3, 4 * gen_filter_num, 4 * gen_filter_num, name+'_res_6')
+			x = myResModule(x, 3, 4 * gen_filter_num, 4 * gen_filter_num, name+'_res_4')
+			x = myResModule(x, 3, 4 * gen_filter_num, 4 * gen_filter_num, name+'_res_5')
+			x = myResModule(x, 3, 4 * gen_filter_num, 4 * gen_filter_num, name+'_res_6')
 
 			return x
 
@@ -248,6 +248,7 @@ class CycleGAN():
 				elapsed_time = datetime.datetime.now() - start_time
 
 				# plot the progress
+				'''
 				print ("[Epoch %d/%d] [Batch %d/%d] [D loss: %f, acc: %3d%%] [G loss: %05f, adv: %05f, recon: %05f] time: %s " \
 														% ( epoch, epochs,
 															batch_i, self.data_loader.n_batches,
@@ -256,9 +257,18 @@ class CycleGAN():
 															np.mean(g_loss[1:3]),
 															np.mean(g_loss[3:5]),
 															elapsed_time))
+															'''
 				acc_sum += 100 * d_loss[1]
 				# If at save interval => save generated image samples
-				if batch_i % sample_interval == 0:
+				if batch_i % (self.data_loader.n_batches -1) == 0:
+					print ("[Epoch %d/%d] [Batch %d/%d] [D loss: %f, acc: %3d%%] [G loss: %05f, adv: %05f, recon: %05f] time: %s " \
+														% ( epoch, epochs,
+															batch_i, self.data_loader.n_batches,
+															d_loss[0], 100*d_loss[1],
+															g_loss[0],
+															np.mean(g_loss[1:3]),
+															np.mean(g_loss[3:5]),
+															elapsed_time))
 					self.sample_images(epoch, batch_i)
 			print( "mean accuracy of epoch %d is %3d%%" %(epoch, acc_sum/self.data_loader.n_batches ))
 
