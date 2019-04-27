@@ -260,7 +260,7 @@ class CycleGAN():
 															'''
 				acc_sum += 100 * d_loss[1]
 				# If at save interval => save generated image samples
-				if batch_i % (self.data_loader.n_batches -1) == 0:
+				if batch_i % (self.data_loader.n_batches - 2) == 0:
 					print ("[Epoch %d/%d] [Batch %d/%d] [D loss: %f, acc: %3d%%] [G loss: %05f, adv: %05f, recon: %05f] time: %s " \
 														% ( epoch, epochs,
 															batch_i, self.data_loader.n_batches,
