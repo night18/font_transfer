@@ -4,8 +4,8 @@ from PIL import Image, ImageDraw, ImageFont
 
 TEXTS_DIR = "texts"
 IMAGES_DIR = "images"
-TTF_NAME = "Roboto-Regular"
-TTF_PATH = "Roboto-Regular.ttf"
+TTF_NAME = "wthc06"
+TTF_PATH = "wthc06.ttf"
 FONT_SIZE = "400"
 
 
@@ -23,7 +23,7 @@ for x in ttf["cmap"].tables:
         f.close()
 ttf.close()
 
-font = ImageFont.truetype(TTF_PATH, 500)
+font = ImageFont.truetype(TTF_PATH, 100)
 files = os.listdir(TEXTS_DIR)
 for filename in files:
     name, ext = os.path.splitext(filename)
@@ -31,12 +31,12 @@ for filename in files:
     input_txt = TEXTS_DIR + "/" + filename
     output_png = IMAGES_DIR + "/" + TTF_NAME + "/" + name + "_" + FONT_SIZE + ".png"
 
-    img = Image.new('RGB', (534, 560), color='white')
+    img = Image.new('RGB', (100, 100), color='white')
     d = ImageDraw.Draw(img)
 
     with open(os.path.join(TEXTS_DIR, filename)) as f:
         c = f.read(1)
-        d.text((80,0), c, fill=(0,0,0), font=font)
+        d.text((0,0), c, fill=(0,0,0), font=font)
         img.save(output_png)
 
 # #     subprocess.call(["convert", "-font", TTF_PATH, "-pointsize", FONT_SIZE, "-background", "rgba(0,0,0,0)", "label:@" + input_txt, output_png])
