@@ -197,8 +197,9 @@ class CycleGAN():
 
 		x1 = d_layer(img, dis_filter_num, kernel_size=(5,5), name='1')
 		x2 = d_layer(x1, 2 * dis_filter_num, kernel_size=(5,5), name='2')
-		x3 = d_layer(x2, 4 * dis_filter_num, kernel_size=(3,3), name='3')
-		x4 = d_layer(x3, 4 * dis_filter_num, kernel_size=(3,3), name='4')
+		# The discriminator is too strong
+		# x3 = d_layer(x2, 4 * dis_filter_num, kernel_size=(3,3), name='3')
+		# x4 = d_layer(x3, 4 * dis_filter_num, kernel_size=(3,3), name='4')
 
 		prediction = Conv2D( 1, kernel_size=(3,3), name= name+'_disc_conv_pred')(x4)
 		model = Model(
@@ -272,6 +273,8 @@ class CycleGAN():
 					self.sample_images(epoch, batch_i)
 			print( "mean accuracy of epoch %d is %3d%%" %(epoch, acc_sum/self.data_loader.n_batches ))
 
+		self.store_model('models')
+
 	def sample_images(self, epoch, batch_i):
 		os.makedirs('images/%s' % self.dataset_name, exist_ok=True)
 		r, c = 2, 3
@@ -305,6 +308,77 @@ class CycleGAN():
 		fig.savefig("images/%s/%d_%d.png" % (self.dataset_name, epoch, batch_i))
 		plt.close()
 
+
+	def store_model(path):
+		g_AtoB_h5_storage_path = path + '/ga2b.h5'
+		g_BtoA_h5_storage_path = path + '/gb2a.h5'
+
+		d_A_h5_storage_path = path + '/da.h5'
+		d_B_h5_storage_path = path + '/db.h5'
+
+		save_model(
+			self.g_AtoB,
+			g_AtoB_h5_storage_path,
+			overwrite = True,
+			include_optimizer=True
+		)
+		save_model(
+			self.g_BtoA,
+			g_BtoA_h5_storage_path,
+			overwrite = True,
+			include_optimizer=True
+		)
+
+		save_model(
+			self.d_A,
+			d_A_h5_storage_path,
+			overwrite = True,
+			include_optimizer=True
+		)
+		save_model(
+			self.d_B,
+			d_B_h5_storage_path,
+			overwrite = True,
+			include_optimizer=True
+		)
+
+
+	def load_model(path):
+		g_AtoB_h5_storage_path = path + '/ga2b.h5'
+		g_BtoA_h5_storage_path = path + '/gb2a.h5'
+
+		d_A_h5_storage_path = path + '/da.h5'
+		d_B_h5_storage_path = path + '/db.h5'
+
+		try:
+			self.g_AtoB = load_model(
+				g_AtoB_h5_storage_path,
+				compile=True
+			)
+
+			self.g_BtoA = load_model(
+				g_BtoA_h5_storage_path,
+				compile=True
+			)
+
+			self.d_A = load_model(
+				d_A_h5_storage_path,
+				compile=True
+			)
+
+			self.d_B = load_model(
+				d_B_h5_storage_path,
+				compile=True
+			)
+
+		except Exception as e:
+			print("!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+			print(e)
+			print("!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+			return False
+		finally:
+			return True
+
 if __name__ == '__main__':
 
 	config = ConfigProto()
@@ -313,4 +387,5 @@ if __name__ == '__main__':
 	with tf.Session(config=config) as sess:
 		tf.set_random_seed(100)
 		gan = CycleGAN()
-		gan.train(epochs=epochs, batch_size = 1,  sample_interval=sample_interval)
+		if not gan.load_model('models'):
+			gan.train(epochs=epochs, batch_size = 1,  sample_interval=sample_interval)
