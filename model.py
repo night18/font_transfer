@@ -25,22 +25,24 @@ from tensorflow.compat.v1 import InteractiveSession
 gen_filter_num = 32
 dis_filter_num = 64
 batch_size = 1
-sample_interval = 200
+sample_interval = 100
+epochs = 100
 pool_size = 50
-img_width = 256
-img_height = 256
-img_depth = 3
-relu_alpha = 0.1
+img_width = 48
+img_height = 48
+img_depth = 1
+relu_alpha = 0.2
 dropout_rate = 0.2
 learning_rate = 0.001
 lambda_cycle = 10
+img_shape = (img_height, img_width, img_depth)
 
 class CycleGAN():
 	def __init__(self):
 
 
 		self.dataset_name = 'font2font'
-		self.data_loader = DataLoader(dataset_name=self.dataset_name, img_res = (img_height, img_width))
+		self.data_loader = DataLoader(dataset_name=self.dataset_name, img_res = img_shape)
 
 		# Calculate output shape of D (PatchGAN)
 		patch = int(img_height / 2**4)
@@ -67,8 +69,8 @@ class CycleGAN():
 		self.g_BtoA = self.generator(name='g_BtoA')
 
 		# Inputs
-		img_A = Input(shape=(img_height, img_width, img_depth))
-		img_B = Input(shape=(img_height, img_width, img_depth))
+		img_A = Input(shape=img_shape)
+		img_B = Input(shape=img_shape)
 
 		# Change domain
 		fake_B = self.g_AtoB(img_A)
@@ -165,13 +167,13 @@ class CycleGAN():
 			x = LeakyReLU(alpha=relu_alpha, name= name+'_decoder_relu_1')(x)
 
 			x = Conv2DTranspose( gen_filter_num, kernel_size=(3,3), strides=(2,2), padding='same', name=name+'_decoder_conv_2')(x)
-			# x = BatchNormalization(name= name+'_decoder_norm_2')(x)
-			# x = LeakyReLU(alpha=relu_alpha, name= name+'_decoder_relu_2')(x)
+			x = BatchNormalization(name= name+'_decoder_norm_2')(x)
+			x = LeakyReLU(alpha=relu_alpha, name= name+'_decoder_relu_2')(x)
 
 			x = Conv2DTranspose( img_depth, kernel_size=(7,7), activation='tanh' ,strides=(1,1), padding='same', name=name+'_decoder_conv_3')(x)
 			return x
 
-		img = Input(shape=(img_height, img_width, img_depth))
+		img = Input(shape=img_shape)
 
 		x1 = encoder(img, name=name)
 		x2 = transfer(x1, name=name)
@@ -191,14 +193,14 @@ class CycleGAN():
 			x = LeakyReLU(alpha=relu_alpha, name= 'disc_relu_'+ name)(x)
 			return x
 
-		img = Input(shape=(img_height, img_width, img_depth))
+		img = Input(shape=img_shape)
 
 		x1 = d_layer(img, dis_filter_num, kernel_size=(5,5), name='1')
 		x2 = d_layer(x1, 2 * dis_filter_num, kernel_size=(5,5), name='2')
 		x3 = d_layer(x2, 4 * dis_filter_num, kernel_size=(3,3), name='3')
 		x4 = d_layer(x3, 4 * dis_filter_num, kernel_size=(3,3), name='4')
 
-		prediction = Dense( 1, activation='sigmoid', name= name+'_disc_conv_pred')(x4)
+		prediction = Dense( 1, name= name+'_disc_conv_pred')(x4)
 		model = Model(
 			inputs = img,
 			outputs = prediction
@@ -216,6 +218,7 @@ class CycleGAN():
 		fake = np.zeros((batch_size, ) + self.disc_patch )
 
 		for epoch in range(epochs):
+			acc_sum = 0
 			for batch_i, (imgs_A, imgs_B) in enumerate(self.data_loader.load_batch(batch_size)):
 
 				# Train Discriminator
@@ -252,11 +255,11 @@ class CycleGAN():
 															np.mean(g_loss[1:3]),
 															np.mean(g_loss[3:5]),
 															elapsed_time))
-
+				acc_sum += 100 * d_loss[1]
 				# If at save interval => save generated image samples
 				if batch_i % sample_interval == 0:
 					self.sample_images(epoch, batch_i)
-
+			print( "mean accuracy of epoch %d is %3d%%" %(epoch, acc_sum/self.data_loader.n_batches ))
 
 	def sample_images(self, epoch, batch_i):
 		os.makedirs('images/%s' % self.dataset_name, exist_ok=True)
@@ -273,7 +276,7 @@ class CycleGAN():
 
 		gen_imgs = np.concatenate([imgs_A, fake_B, recon_A, imgs_B, fake_A, recon_B])
 
-		print(gen_imgs)
+		#print(gen_imgs)
 		# rescale the images to 0 -1
 		gen_imgs = 0.5 * gen_imgs + 0.5
 
@@ -283,7 +286,8 @@ class CycleGAN():
 
 		for i in range(r):
 			for j in range(c):
-				axs[i,j].imshow(gen_imgs[cnt])
+				display = gen_imgs[cnt].reshape(gen_imgs[cnt].shape[0],gen_imgs[cnt].shape[1])
+				axs[i,j].imshow(display, cmap='gray')
 				axs[i,j].set_title(titles[j])
 				axs[i,j].axis('off')
 				cnt += 1
@@ -298,4 +302,4 @@ if __name__ == '__main__':
 	with tf.Session(config=config) as sess:
 		tf.set_random_seed(100)
 		gan = CycleGAN()
-		gan.train(epochs=10, batch_size = 1,  sample_interval=sample_interval)
+		gan.train(epochs=epochs, batch_size = 1,  sample_interval=sample_interval)

@@ -25,7 +25,9 @@ class DataLoader():
 				img = scipy.misc.imresize(img, self.img_res)
 			imgs.append(img)
 
-		imgs = np.array(imgs)/127.5 - 1.
+		imgs = np.array(imgs)
+		imgs = imgs.reshape(imgs.shape[0], 48, 48, 1)		
+		imgs = imgs/127.5 - 1.
 
 		return imgs
 
@@ -53,16 +55,28 @@ class DataLoader():
 				img_A = scipy.misc.imresize(img_A, self.img_res)
 				img_B = scipy.misc.imresize(img_B, self.img_res)
 
+				'''
 				if not is_testing and np.random.random() > 0.5:
 						img_A = np.fliplr(img_A)
 						img_B = np.fliplr(img_B)
+				'''
 
 				imgs_A.append(img_A)
 				imgs_B.append(img_B)
 
+
+			imgs_A = np.array(imgs_A)
+			imgs_B = np.array(imgs_B)
+
+
+			imgs_A = imgs_A.reshape(imgs_A.shape[0], 48, 48, 1)
+			imgs_B = imgs_B.reshape(imgs_B.shape[0], 48, 48, 1)
+
+			print(imgs_A.shape)
+
 			# range (-1, 1)
-			imgs_A = np.array(imgs_A)/127.5 - 1.
-			imgs_B = np.array(imgs_B)/127.5 - 1.
+			imgs_A = imgs_A/127.5 - 1.
+			imgs_B = imgs_B/127.5 - 1.
 
 			yield imgs_A, imgs_B
 
@@ -73,4 +87,4 @@ class DataLoader():
 		return img[np.newaxis, :, :, :]
 
 	def imread(self, path):
-		return scipy.misc.imread(path, mode='RGB').astype(np.float)
+		return scipy.misc.imread(path, mode='RGB', flatten=True).astype(np.float)
