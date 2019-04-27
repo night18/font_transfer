@@ -200,7 +200,7 @@ class CycleGAN():
 		x3 = d_layer(x2, 4 * dis_filter_num, kernel_size=(3,3), name='3')
 		x4 = d_layer(x3, 4 * dis_filter_num, kernel_size=(3,3), name='4')
 
-		prediction = Conv2D( 1, name= name+'_disc_conv_pred')(x4)
+		prediction = Conv2D( 1, kernel_size=(3,3), name= name+'_disc_conv_pred')(x4)
 		model = Model(
 			inputs = img,
 			outputs = prediction
