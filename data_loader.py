@@ -41,8 +41,8 @@ class DataLoader():
 
 		# Sample n_batches * batch_size from each path list so that model sees all
 		# samples from both domains
-		path_A = np.random.choice(path_A, total_samples, replace=False)
-		path_B = np.random.choice(path_B, total_samples, replace=False)
+		path_A = np.random.choice(path_A, total_samples, replace=True)
+		path_B = np.random.choice(path_B, total_samples, replace=True)
 
 		for i in range(self.n_batches-1):
 			batch_A = path_A[i*batch_size:(i+1)*batch_size]

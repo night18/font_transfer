@@ -33,7 +33,8 @@ img_height = 48
 img_depth = 1
 relu_alpha = 0.2
 dropout_rate = 0.2
-learning_rate = 0.001
+g_learning_rate = 0.005
+d_learning_rate = 0.001
 lambda_cycle = 10
 img_shape = (img_height, img_width, img_depth)
 
@@ -45,22 +46,23 @@ class CycleGAN():
 		self.data_loader = DataLoader(dataset_name=self.dataset_name, img_res = img_shape)
 
 		# Calculate output shape of D (PatchGAN)
-		patch = int(img_height / 2**4)
+		patch = 3
 		self.disc_patch = (patch, patch, 1)
 
-		optimizer = Adam(learning_rate)
+		g_optimizer = Adam(g_learning_rate)
+		d_optimizer = Adam(d_learning_rate)
 		
 		# Build and compile the discriminator
 		self.d_A = self.discriminator(name='d_A')
 		self.d_B = self.discriminator(name='d_B')
 		self.d_A.compile(
 			loss = 'mse',
-			optimizer = optimizer,
+			optimizer = d_optimizer,
 			metrics = ['accuracy']
 			)
 		self.d_B.compile(
 			loss = 'mse',
-			optimizer = optimizer,
+			optimizer = d_optimizer,
 			metrics = ['accuracy']
 			)
 
@@ -104,7 +106,7 @@ class CycleGAN():
 		self.combine.compile(
 						loss = ['mse', 'mse', 'mae', 'mae'],
 						loss_weights = [1, 1, lambda_cycle, lambda_cycle],
-						optimizer = optimizer
+						optimizer = g_optimizer
 						)
 		
 	def generator(self, name = ''):
@@ -188,7 +190,7 @@ class CycleGAN():
 	def discriminator(self, name = ''):
 
 		def d_layer(pre_lyr, filters, kernel_size=(3,3), name=''):
-			x = Conv2D(filters, kernel_size=kernel_size, strides=(2,2), padding='same', name= 'disc_conv_'+ name)(pre_lyr)
+			x = Conv2D(filters, kernel_size=kernel_size, strides=(4,4), padding='same', name= 'disc_conv_'+ name)(pre_lyr)
 			x = BatchNormalization(name= 'disc_norm_'+ name)(x)
 			x = LeakyReLU(alpha=relu_alpha, name= 'disc_relu_'+ name)(x)
 			return x
@@ -201,7 +203,7 @@ class CycleGAN():
 		# x3 = d_layer(x2, 4 * dis_filter_num, kernel_size=(3,3), name='3')
 		# x4 = d_layer(x3, 4 * dis_filter_num, kernel_size=(3,3), name='4')
 
-		prediction = Conv2D( 1, kernel_size=(3,3), name= name+'_disc_conv_pred')(x4)
+		prediction = Conv2D( 1, kernel_size=(3,3), name= name+'_disc_conv_pred')(x2)
 		model = Model(
 			inputs = img,
 			outputs = prediction
@@ -309,7 +311,7 @@ class CycleGAN():
 		plt.close()
 
 
-	def store_model(path):
+	def store_model(slef, path):
 		g_AtoB_h5_storage_path = path + '/ga2b.h5'
 		g_BtoA_h5_storage_path = path + '/gb2a.h5'
 
@@ -343,13 +345,13 @@ class CycleGAN():
 		)
 
 
-	def load_model(path):
+	def load_model(self, path):
 		g_AtoB_h5_storage_path = path + '/ga2b.h5'
 		g_BtoA_h5_storage_path = path + '/gb2a.h5'
 
 		d_A_h5_storage_path = path + '/da.h5'
 		d_B_h5_storage_path = path + '/db.h5'
-
+		error = False
 		try:
 			self.g_AtoB = load_model(
 				g_AtoB_h5_storage_path,
@@ -373,11 +375,11 @@ class CycleGAN():
 
 		except Exception as e:
 			print("!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+			error = True
 			print(e)
 			print("!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-			return False
 		finally:
-			return True
+			return error
 
 if __name__ == '__main__':
 
@@ -387,5 +389,5 @@ if __name__ == '__main__':
 	with tf.Session(config=config) as sess:
 		tf.set_random_seed(100)
 		gan = CycleGAN()
-		if not gan.load_model('models'):
+		if gan.load_model('models'):
 			gan.train(epochs=epochs, batch_size = 1,  sample_interval=sample_interval)
