@@ -200,7 +200,7 @@ class CycleGAN():
 		x3 = d_layer(x2, 4 * dis_filter_num, kernel_size=(3,3), name='3')
 		x4 = d_layer(x3, 4 * dis_filter_num, kernel_size=(3,3), name='4')
 
-		prediction = Dense( 1, name= name+'_disc_conv_pred')(x4)
+		prediction = Conv2D( 1, name= name+'_disc_conv_pred')(x4)
 		model = Model(
 			inputs = img,
 			outputs = prediction
@@ -214,9 +214,8 @@ class CycleGAN():
 		start_time = datetime.datetime.now()
 
 		# Adversarial loss ground truths
+		# shape = (1, 3, 3, 1)
 		valid = np.ones((batch_size, ) + self.disc_patch )
-		print((batch_size, ) + self.disc_patch)
-		print("!!!!!!!!!!!!!!!!!")
 		fake = np.zeros((batch_size, ) + self.disc_patch )
 
 		for epoch in range(epochs):
