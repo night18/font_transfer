@@ -203,7 +203,7 @@ class CycleGAN():
 		# x3 = d_layer(x2, 4 * dis_filter_num, kernel_size=(3,3), name='3')
 		# x4 = d_layer(x3, 4 * dis_filter_num, kernel_size=(3,3), name='4')
 
-		prediction = Conv2D( 1, activation='sigmoid',kernel_size=(3,3), name= name+'_disc_conv_pred')(x2)
+		prediction = Conv2D( 1 ,kernel_size=(3,3), name= name+'_disc_conv_pred')(x2)
 		model = Model(
 			inputs = img,
 			outputs = prediction
@@ -218,7 +218,7 @@ class CycleGAN():
 
 		# Adversarial loss ground truths
 		# shape = (1, 3, 3, 1)
-		valid = 0.9 * np.ones((batch_size, ) + self.disc_patch )
+		valid = np.ones((batch_size, ) + self.disc_patch )
 		fake = np.zeros((batch_size, ) + self.disc_patch )
 
 		for epoch in range(epochs):
@@ -233,11 +233,11 @@ class CycleGAN():
 				fake_B = self.g_AtoB.predict(imgs_A)
 				fake_A = self.g_BtoA.predict(imgs_B)
 
-				dA_loss_real = self.d_A.train_on_batch(imgs_A, valid)
+				dA_loss_real = self.d_A.train_on_batch(imgs_A, 0.9 * valid)
 				dA_loss_fake = self.d_A.train_on_batch(fake_A, fake)
 				dA_loss = 0.5 * np.add(dA_loss_real, dA_loss_fake)
 
-				dB_loss_real = self.d_B.train_on_batch(imgs_B, valid)
+				dB_loss_real = self.d_B.train_on_batch(imgs_B, 0.9 * valid)
 				dB_loss_fake = self.d_B.train_on_batch(fake_B, fake)
 				dB_loss = 0.5 * np.add(dB_loss_real, dB_loss_fake)
 
@@ -257,7 +257,7 @@ class CycleGAN():
 			print ("[Epoch %d/%d] [D loss: %f, acc: %3d%%] [G loss: %05f, adv: %05f, recon: %05f] time: %s " \
 												% ( epoch, epochs,
 													d_loss_sum/self.data_loader.n_batches, acc_sum/self.data_loader.n_batches,
-													g_loss/self.data_loader.n_batches,
+													g_loss_sum/self.data_loader.n_batches,
 													g_adv_loss_sum/self.data_loader.n_batches,
 													g_con_loss_sum/self.data_loader.n_batches,
 													elapsed_time))
@@ -375,7 +375,7 @@ if __name__ == '__main__':
 	config.gpu_options.allow_growth = True
 	config.gpu_options.per_process_gpu_memory_fraction = 0.90
 	with tf.Session(config=config) as sess:
-		tf.set_random_seed(100)
+		tf.set_random_seed(9527)
 		gan = CycleGAN()
 		if gan.load_model('models'):
 			gan.train(epochs=epochs, batch_size = 1,  sample_interval=sample_interval)
