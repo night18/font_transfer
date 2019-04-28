@@ -223,6 +223,8 @@ class CycleGAN():
 		valid = np.ones((batch_size, ) + self.disc_patch )
 		fake = np.zeros((batch_size, ) + self.disc_patch )
 
+		long_valid = np.ones((2 * batch_size, ) + self.disc_patch )
+
 		for epoch in range(epochs):
 			acc_sum = 0
 			d_loss_sum = 0
@@ -235,11 +237,17 @@ class CycleGAN():
 				fake_B = self.g_AtoB.predict(imgs_A)
 				fake_A = self.g_BtoA.predict(imgs_B)
 
-				dA_loss_real = self.d_A.train_on_batch(imgs_A, 0.9 * valid)
+				recon_A = self.g_BtoA.predict(fake_B)
+				recon_B = self.g_AtoB.predict(fake_A)
+
+				mix_A = np.concatenate((imgs_A, recon_A),axis= 0 )
+				mix_B = np.concatenate((imgs_B, recon_B),axis= 0 )
+
+				dA_loss_real = self.d_A.train_on_batch(mix_A, long_valid)
 				dA_loss_fake = self.d_A.train_on_batch(fake_A, fake)
 				dA_loss = 0.5 * np.add(dA_loss_real, dA_loss_fake)
 
-				dB_loss_real = self.d_B.train_on_batch(imgs_B, 0.9 * valid)
+				dB_loss_real = self.d_B.train_on_batch(mix_A, long_valid)
 				dB_loss_fake = self.d_B.train_on_batch(fake_B, fake)
 				dB_loss = 0.5 * np.add(dB_loss_real, dB_loss_fake)
 
