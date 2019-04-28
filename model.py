@@ -50,8 +50,8 @@ class CycleGAN():
 		patch = 3
 		self.disc_patch = (patch, patch, 1)
 
-		g_optimizer = Adam(g_learning_rate)
-		d_optimizer = Adam(d_learning_rate)
+		g_optimizer = Adam(g_learning_rate, 0.05)
+		d_optimizer = Adam(d_learning_rate, 0.05)
 		
 		# Build and compile the discriminator
 		self.d_A = self.discriminator(name='d_A')
@@ -128,7 +128,7 @@ class CycleGAN():
 			else:
 				x = Conv2D(first_channels, kernel_size=(kernel_length,kernel_length), strides=(1,1) ,padding='same', name=res_id+'_conv_1' )(pre_lyr)
 			x = BatchNormalization(name=res_id+'_batch_1')(x)
-			x = Dropout(dropout_rate, name=res_id+'_dropout_1')(x)
+			# x = Dropout(dropout_rate, name=res_id+'_dropout_1')(x)
 			x = LeakyReLU(alpha=relu_alpha)(x)
 
 			x = Conv2D(second_channels, kernel_size=(kernel_length,kernel_length), strides=(1,1), padding='same', name=res_id+'_conv_2')(x)
@@ -136,12 +136,12 @@ class CycleGAN():
 			shortcut = shortcutModule(pre_lyr, second_channels, res_id, is_stride)
 			x = concatenate([x, shortcut], name=res_id+'_conc')
 			x = BatchNormalization(name=res_id+'_batch_2')(x)
-			x = Dropout(dropout_rate, name=res_id+'_dropout_2')(x)
+			# x = Dropout(dropout_rate, name=res_id+'_dropout_2')(x)
 			x = LeakyReLU(alpha=relu_alpha)(x)
 			return x
 
 		def encoder(pre_lyr, name=''):
-			x = Conv2D(gen_filter_num, kernel_size=(7,7), strides=(1,1), padding='same', name= name+'_encoder_conv_1')(pre_lyr)
+			x = Conv2D(gen_filter_num, kernel_size=(3,3), strides=(1,1), padding='same', name= name+'_encoder_conv_1')(pre_lyr)
 			x = BatchNormalization(name= name+'_encoder_norm_1')(x)
 			x = LeakyReLU(alpha=relu_alpha, name= name+'_encoder_relu_1')(x)
 
@@ -176,9 +176,9 @@ class CycleGAN():
 			x = LeakyReLU(alpha=relu_alpha, name= name+'_decoder_relu_2')(x)
 
 			if use_tanh:
-				x = Conv2DTranspose( img_depth, kernel_size=(7,7), activation='tanh' ,strides=(1,1), padding='same', name=name+'_decoder_conv_3')(x)
+				x = Conv2DTranspose( img_depth, kernel_size=(3,3), activation='tanh' ,strides=(1,1), padding='same', name=name+'_decoder_conv_3')(x)
 			else:
-				x = Conv2DTranspose( img_depth, kernel_size=(7,7), activation='sigmoid' ,strides=(1,1), padding='same', name=name+'_decoder_conv_3')(x)
+				x = Conv2DTranspose( img_depth, kernel_size=(3,3), activation='sigmoid' ,strides=(1,1), padding='same', name=name+'_decoder_conv_3')(x)
 
 			return x
 
@@ -252,7 +252,7 @@ class CycleGAN():
 				dA_loss_fake = self.d_A.train_on_batch(fake_A, fake)
 				dA_loss = 0.5 * np.add(dA_loss_real, dA_loss_fake)
 
-				dB_loss_real = self.d_B.train_on_batch(mix_A, long_valid)
+				dB_loss_real = self.d_B.train_on_batch(mix_B, long_valid)
 				dB_loss_fake = self.d_B.train_on_batch(fake_B, fake)
 				dB_loss = 0.5 * np.add(dB_loss_real, dB_loss_fake)
 
