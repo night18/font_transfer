@@ -203,7 +203,7 @@ class CycleGAN():
 		# x3 = d_layer(x2, 4 * dis_filter_num, kernel_size=(3,3), name='3')
 		# x4 = d_layer(x3, 4 * dis_filter_num, kernel_size=(3,3), name='4')
 
-		prediction = Conv2D( 1, kernel_size=(3,3), name= name+'_disc_conv_pred')(x2)
+		prediction = Conv2D( 1, activation='sigmoid',kernel_size=(3,3), name= name+'_disc_conv_pred')(x2)
 		model = Model(
 			inputs = img,
 			outputs = prediction
@@ -218,15 +218,18 @@ class CycleGAN():
 
 		# Adversarial loss ground truths
 		# shape = (1, 3, 3, 1)
-		valid = np.ones((batch_size, ) + self.disc_patch )
+		valid = 0.9 * np.ones((batch_size, ) + self.disc_patch )
 		fake = np.zeros((batch_size, ) + self.disc_patch )
 
 		for epoch in range(epochs):
 			acc_sum = 0
+			d_loss_sum = 0
+			g_loss_sum = 0 
+			g_adv_loss_sum = 0
+			g_con_loss_sum = 0
+
 			for batch_i, (imgs_A, imgs_B) in enumerate(self.data_loader.load_batch(batch_size)):
-
 				# Train Discriminator
-
 				fake_B = self.g_AtoB.predict(imgs_A)
 				fake_A = self.g_BtoA.predict(imgs_B)
 
@@ -240,44 +243,29 @@ class CycleGAN():
 
 				d_loss = 0.5 * np.add(dA_loss, dB_loss)
 
-				# self.d_A.summary()
-
-
 				g_loss = self.combine.train_on_batch([imgs_A, imgs_B],
 													[valid, valid,
 													imgs_A, imgs_B])
-				# self.d_A.summary()
-
-				elapsed_time = datetime.datetime.now() - start_time
-
-				# plot the progress
-				'''
-				print ("[Epoch %d/%d] [Batch %d/%d] [D loss: %f, acc: %3d%%] [G loss: %05f, adv: %05f, recon: %05f] time: %s " \
-														% ( epoch, epochs,
-															batch_i, self.data_loader.n_batches,
-															d_loss[0], 100*d_loss[1],
-															g_loss[0],
-															np.mean(g_loss[1:3]),
-															np.mean(g_loss[3:5]),
-															elapsed_time))
-															'''
 				acc_sum += 100 * d_loss[1]
-				# If at save interval => save generated image samples
-				if batch_i % (self.data_loader.n_batches - 1) == 0:
-					print ("[Epoch %d/%d] [Batch %d/%d] [D loss: %f, acc: %3d%%] [G loss: %05f, adv: %05f, recon: %05f] time: %s " \
-														% ( epoch, epochs,
-															batch_i, self.data_loader.n_batches,
-															d_loss[0], 100*d_loss[1],
-															g_loss[0],
-															np.mean(g_loss[1:3]),
-															np.mean(g_loss[3:5]),
-															elapsed_time))
-					self.sample_images(epoch, batch_i)
-			print( "mean accuracy of epoch %d is %3d%%" %(epoch, acc_sum/self.data_loader.n_batches ))
+				d_loss_sum += d_loss[0]
+				g_loss_sum += g_loss[0]
+				g_adv_loss_sum += np.mean(g_loss[1:3])
+				g_con_loss_sum += np.mean(g_loss[3:5])
+				
+
+			elapsed_time = datetime.datetime.now() - start_time
+			print ("[Epoch %d/%d] [D loss: %f, acc: %3d%%] [G loss: %05f, adv: %05f, recon: %05f] time: %s " \
+												% ( epoch, epochs,
+													d_loss_sum/self.data_loader.n_batches, acc_sum/self.data_loader.n_batches,
+													g_loss/self.data_loader.n_batches,
+													g_adv_loss_sum/self.data_loader.n_batches,
+													g_con_loss_sum/self.data_loader.n_batches,
+													elapsed_time))
+			self.sample_images(epoch)
 
 		self.store_model('models')
 
-	def sample_images(self, epoch, batch_i):
+	def sample_images(self, epoch):
 		os.makedirs('images/%s' % self.dataset_name, exist_ok=True)
 		r, c = 2, 3
 
@@ -307,7 +295,7 @@ class CycleGAN():
 				axs[i,j].set_title(titles[j])
 				axs[i,j].axis('off')
 				cnt += 1
-		fig.savefig("images/%s/%d_%d.png" % (self.dataset_name, epoch, batch_i))
+		fig.savefig("images/%s/%d.png" % (self.dataset_name, epoch))
 		plt.close()
 
 
