@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 from tensorflow.compat.v1 import ConfigProto
 from tensorflow.compat.v1 import InteractiveSession
 
-gen_filter_num = 32
+gen_filter_num = 16
 dis_filter_num = 64
 batch_size = 1
 sample_interval = 100
@@ -263,7 +263,7 @@ class CycleGAN():
 															'''
 				acc_sum += 100 * d_loss[1]
 				# If at save interval => save generated image samples
-				if batch_i % (self.data_loader.n_batches - 2) == 0:
+				if batch_i % (self.data_loader.n_batches - 1) == 0:
 					print ("[Epoch %d/%d] [Batch %d/%d] [D loss: %f, acc: %3d%%] [G loss: %05f, adv: %05f, recon: %05f] time: %s " \
 														% ( epoch, epochs,
 															batch_i, self.data_loader.n_batches,
@@ -311,7 +311,7 @@ class CycleGAN():
 		plt.close()
 
 
-	def store_model(slef, path):
+	def store_model(self, path):
 		g_AtoB_h5_storage_path = path + '/ga2b.h5'
 		g_BtoA_h5_storage_path = path + '/gb2a.h5'
 
