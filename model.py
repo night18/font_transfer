@@ -24,9 +24,9 @@ from tensorflow.compat.v1 import InteractiveSession
 
 gen_filter_num = 16
 dis_filter_num = 64
-batch_size = 1
+batch_size = 8
 sample_interval = 100
-epochs = 50
+epochs = 200
 pool_size = 50
 img_width = 48
 img_height = 48
@@ -102,6 +102,8 @@ class CycleGAN():
 						inputs = [img_A, img_B],
 						outputs = [valid_A, valid_B, recon_A, recon_B]
 						)
+
+		# self.combine.summary()
 
 		self.combine.compile(
 						loss = ['mse', 'mse', 'mae', 'mae'],
@@ -378,4 +380,4 @@ if __name__ == '__main__':
 		tf.set_random_seed(9527)
 		gan = CycleGAN()
 		if gan.load_model('models'):
-			gan.train(epochs=epochs, batch_size = 1,  sample_interval=sample_interval)
+			gan.train(epochs=epochs, batch_size = batch_size,  sample_interval=sample_interval)
