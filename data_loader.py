@@ -2,6 +2,8 @@ import scipy
 from glob import glob
 import numpy as np
 
+use_tanh = False
+
 class DataLoader():
 	def __init__(self, dataset_name, img_res=(128, 128)):
 		self.dataset_name = dataset_name
@@ -26,8 +28,11 @@ class DataLoader():
 			imgs.append(img)
 
 		imgs = np.array(imgs)
-		imgs = imgs.reshape(imgs.shape[0], 48, 48, 1)		
-		imgs = imgs/127.5 - 1.
+		imgs = imgs.reshape(imgs.shape[0], 48, 48, 1)	
+		if use_tanh:	
+			imgs = imgs/127.5 - 1.
+		else: 
+			imgs = imgs/255.0
 
 		return imgs
 
@@ -73,16 +78,24 @@ class DataLoader():
 			imgs_B = imgs_B.reshape(imgs_B.shape[0], 48, 48, 1)
 
 
-			# range (-1, 1)
-			imgs_A = imgs_A/127.5 - 1.
-			imgs_B = imgs_B/127.5 - 1.
+			if use_tanh:
+				# range (-1, 1)
+				imgs_A = imgs_A/127.5 - 1.
+				imgs_B = imgs_B/127.5 - 1.
+			else:
+				imgs_A = imgs_A/255.0
+				imgs_B = imgs_B/255.0
 
 			yield imgs_A, imgs_B
 
 	def load_img(self, path):
 		img = self.imread(path)
 		img = scipy.misc.imresize(img, self.img_res)
-		img = img/127.5 - 1.
+		if use_tanh:
+			img = img/127.5 - 1.
+		else:
+			img = img/255.0
+
 		return img[np.newaxis, :, :, :]
 
 	def imread(self, path):

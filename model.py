@@ -37,6 +37,7 @@ g_learning_rate = 0.005
 d_learning_rate = 0.001
 lambda_cycle = 10
 img_shape = (img_height, img_width, img_depth)
+use_tanh = False
 
 class CycleGAN():
 	def __init__(self):
@@ -174,7 +175,11 @@ class CycleGAN():
 			x = BatchNormalization(name= name+'_decoder_norm_2')(x)
 			x = LeakyReLU(alpha=relu_alpha, name= name+'_decoder_relu_2')(x)
 
-			x = Conv2DTranspose( img_depth, kernel_size=(7,7), activation='tanh' ,strides=(1,1), padding='same', name=name+'_decoder_conv_3')(x)
+			if use_tanh:
+				x = Conv2DTranspose( img_depth, kernel_size=(7,7), activation='tanh' ,strides=(1,1), padding='same', name=name+'_decoder_conv_3')(x)
+			else:
+				x = Conv2DTranspose( img_depth, kernel_size=(7,7), activation='sigmoid' ,strides=(1,1), padding='same', name=name+'_decoder_conv_3')(x)
+
 			return x
 
 		img = Input(shape=img_shape)
@@ -292,7 +297,9 @@ class CycleGAN():
 
 		#print(gen_imgs)
 		# rescale the images to 0 -1
-		gen_imgs = 0.5 * gen_imgs + 0.5
+		if use_tanh:
+			gen_imgs = 0.5 * gen_imgs + 0.5
+
 
 		titles = ['Original', 'Translated', 'Reconstructed']
 		fig, axs = plt.subplots(r, c)
