@@ -24,7 +24,7 @@ from tensorflow.compat.v1 import InteractiveSession
 
 gen_filter_num = 16
 dis_filter_num = 64
-batch_size = 16
+batch_size = 8
 sample_interval = 100
 epochs = 50
 pool_size = 50
@@ -35,9 +35,9 @@ relu_alpha = 0.1
 dropout_rate = 0.2
 g_learning_rate = 0.001
 d_learning_rate = 0.001
-lambda_cycle = 20
+lambda_cycle = 10
 img_shape = (img_height, img_width, img_depth)
-use_tanh = False
+use_tanh = True
 disc_slower = False
 
 class CycleGAN():
@@ -246,15 +246,18 @@ class CycleGAN():
 				recon_A = self.g_BtoA.predict(fake_B)
 				recon_B = self.g_AtoB.predict(fake_A)
 
-				mix_A = np.concatenate((imgs_A, recon_A),axis= 0 )
-				mix_B = np.concatenate((imgs_B, recon_B),axis= 0 )
+				noise = np.random.normal(0, 0.1, imgs_A.shape)
+				noise_A = imgs_A + noise
+				noise_B = imgs_B + noise
 
 				if disc_slower:
+					mix_A = np.concatenate((imgs_A, recon_A),axis= 0 )
+					mix_B = np.concatenate((imgs_B, recon_B),axis= 0 )
 					dA_loss_real = self.d_A.train_on_batch(mix_A, long_valid)
 					dB_loss_real = self.d_B.train_on_batch(mix_B, long_valid)
 				else:
-					dA_loss_real = self.d_A.train_on_batch(imgs_A, valid)
-					dB_loss_real = self.d_B.train_on_batch(imgs_B, valid)
+					dA_loss_real = self.d_A.train_on_batch(noise_A, valid)
+					dB_loss_real = self.d_B.train_on_batch(noise_B, valid)
 
 				dA_loss_fake = self.d_A.train_on_batch(fake_A, fake)
 				dA_loss = 0.5 * np.add(dA_loss_real, dA_loss_fake)
