@@ -24,27 +24,28 @@ from tensorflow.compat.v1 import InteractiveSession
 
 gen_filter_num = 16
 dis_filter_num = 64
-batch_size = 8
+batch_size = 16
 sample_interval = 100
-epochs = 200
+epochs = 50
 pool_size = 50
 img_width = 48
 img_height = 48
 img_depth = 1
-relu_alpha = 0.2
+relu_alpha = 0.1
 dropout_rate = 0.2
-g_learning_rate = 0.005
+g_learning_rate = 0.001
 d_learning_rate = 0.001
-lambda_cycle = 10
+lambda_cycle = 20
 img_shape = (img_height, img_width, img_depth)
 use_tanh = False
+disc_slower = False
 
 class CycleGAN():
 	def __init__(self):
 
 
 		self.dataset_name = 'font2font'
-		self.data_loader = DataLoader(dataset_name=self.dataset_name, img_res = img_shape)
+		self.data_loader = DataLoader(dataset_name=self.dataset_name, img_res = img_shape, use_tanh=use_tanh)
 
 		# Calculate output shape of D (PatchGAN)
 		patch = 3
@@ -248,11 +249,16 @@ class CycleGAN():
 				mix_A = np.concatenate((imgs_A, recon_A),axis= 0 )
 				mix_B = np.concatenate((imgs_B, recon_B),axis= 0 )
 
-				dA_loss_real = self.d_A.train_on_batch(mix_A, long_valid)
+				if disc_slower:
+					dA_loss_real = self.d_A.train_on_batch(mix_A, long_valid)
+					dB_loss_real = self.d_B.train_on_batch(mix_B, long_valid)
+				else:
+					dA_loss_real = self.d_A.train_on_batch(imgs_A, valid)
+					dB_loss_real = self.d_B.train_on_batch(imgs_B, valid)
+
 				dA_loss_fake = self.d_A.train_on_batch(fake_A, fake)
 				dA_loss = 0.5 * np.add(dA_loss_real, dA_loss_fake)
 
-				dB_loss_real = self.d_B.train_on_batch(mix_B, long_valid)
 				dB_loss_fake = self.d_B.train_on_batch(fake_B, fake)
 				dB_loss = 0.5 * np.add(dB_loss_real, dB_loss_fake)
 
@@ -319,9 +325,11 @@ class CycleGAN():
 	def store_model(self, path):
 		g_AtoB_h5_storage_path = path + '/ga2b.h5'
 		g_BtoA_h5_storage_path = path + '/gb2a.h5'
+		combine_h5_storage_path = path + '/combine.h5'
 
 		d_A_h5_storage_path = path + '/da.h5'
 		d_B_h5_storage_path = path + '/db.h5'
+		
 
 		save_model(
 			self.g_AtoB,
@@ -349,10 +357,18 @@ class CycleGAN():
 			include_optimizer=True
 		)
 
+		save_model(
+			self.combine,
+			combine_h5_storage_path,
+			overwrite = True,
+			include_optimizer=True
+		)
+
 
 	def load_model(self, path):
 		g_AtoB_h5_storage_path = path + '/ga2b.h5'
 		g_BtoA_h5_storage_path = path + '/gb2a.h5'
+		combine_h5_storage_path = path + '/combine.h5'
 
 		d_A_h5_storage_path = path + '/da.h5'
 		d_B_h5_storage_path = path + '/db.h5'
@@ -375,6 +391,11 @@ class CycleGAN():
 
 			self.d_B = load_model(
 				d_B_h5_storage_path,
+				compile=True
+			)
+
+			self.combine = load_model(
+				combine_h5_storage_path,
 				compile=True
 			)
 

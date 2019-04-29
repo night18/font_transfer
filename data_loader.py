@@ -2,12 +2,12 @@ import scipy
 from glob import glob
 import numpy as np
 
-use_tanh = False
 
 class DataLoader():
-	def __init__(self, dataset_name, img_res=(128, 128)):
+	def __init__(self, dataset_name, img_res=(128, 128), use_tanh=True):
 		self.dataset_name = dataset_name
 		self.img_res = img_res
+		self.use_tanh = use_tanh
 
 	def load_data(self, domain, batch_size=1, is_testing=False):
 		data_type = "train%s" % domain if not is_testing else "test%s" % domain
@@ -29,7 +29,7 @@ class DataLoader():
 
 		imgs = np.array(imgs)
 		imgs = imgs.reshape(imgs.shape[0], 48, 48, 1)	
-		if use_tanh:	
+		if self.use_tanh:	
 			imgs = imgs/127.5 - 1.
 		else: 
 			imgs = imgs/255.0
@@ -78,7 +78,7 @@ class DataLoader():
 			imgs_B = imgs_B.reshape(imgs_B.shape[0], 48, 48, 1)
 
 
-			if use_tanh:
+			if self.use_tanh:
 				# range (-1, 1)
 				imgs_A = imgs_A/127.5 - 1.
 				imgs_B = imgs_B/127.5 - 1.
@@ -91,7 +91,7 @@ class DataLoader():
 	def load_img(self, path):
 		img = self.imread(path)
 		img = scipy.misc.imresize(img, self.img_res)
-		if use_tanh:
+		if self.use_tanh:
 			img = img/127.5 - 1.
 		else:
 			img = img/255.0
@@ -100,3 +100,4 @@ class DataLoader():
 
 	def imread(self, path):
 		return scipy.misc.imread(path, mode='RGB', flatten=True).astype(np.float)
+		# return scipy.misc.imread(path, mode='RGB').astype(np.float)
